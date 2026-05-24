@@ -99,7 +99,7 @@ git clone https://github.com/J-Praveenan/green-dot-chain.git
 ## 2. Navigate to Project
 
 ```bash
-cd greendot-chain
+cd green-dot-chain
 ```
 
 ## 3. Install Dependencies
