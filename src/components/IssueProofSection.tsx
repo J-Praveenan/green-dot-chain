@@ -4,9 +4,7 @@ import { FileCheck, PlusCircle, ShieldCheck } from "lucide-react";
 import IssueProofModal from "./IssueProofModal";
 
 export default function IssueProofSection() {
-  const { connected, wallet } = useWallet();
-
-  const [walletAddress, setWalletAddress] = useState("");
+  const { connected } = useWallet();
   const [openModal, setOpenModal] = useState(false);
 
   return (

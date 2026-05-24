@@ -10,6 +10,11 @@ import {
 
 import { generateSHA256 } from "@/lib/hash";
 import { verifyProofOnBlockchain } from "@/lib/blockchain";
+import {
+  showErrorToast,
+  showSuccessToast,
+ 
+} from "@/lib/toast";
 
 type VerifyResult = {
   valid: boolean;
@@ -46,7 +51,7 @@ export default function VerifyProofModal({ open, onClose }: Props) {
 
   const verifyProof = async () => {
     if (!txHash || !uploadedHash) {
-      alert("Please enter transaction hash and upload the image.");
+      showErrorToast("Please enter transaction hash and upload the image.");
       return;
     }
 
@@ -54,12 +59,17 @@ export default function VerifyProofModal({ open, onClose }: Props) {
       setLoading(true);
       const verifyResult = await verifyProofOnBlockchain(txHash, uploadedHash);
       setResult(verifyResult);
+      {
+        verifyResult.valid ? showSuccessToast("Verification success.") : showErrorToast("Verification failed.");
+      }
+      
     } catch (error) {
       console.error(error);
       setResult({
         valid: false,
         reason: "Verification failed. Please try again.",
       });
+      showErrorToast("Verification failed.");
     } finally {
       setLoading(false);
     }

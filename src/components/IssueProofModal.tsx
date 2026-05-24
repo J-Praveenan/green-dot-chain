@@ -20,6 +20,15 @@ import {
 } from "@/lib/blockchain";
 import { generateCertificatePDF } from "@/lib/certificate";
 import type { TreeProofRecord } from "@/types";
+import {
+  checkDuplicateImageHash,
+  saveProofIndex,
+} from "@/lib/proofRegistry";
+
+import {
+  showErrorToast,
+  showSuccessToast,
+} from "@/lib/toast";
 
 type Props = {
   open: boolean;
@@ -89,12 +98,22 @@ export default function IssueProofModal({ open, onClose }: Props) {
     setImageName(file.name);
 
     const hash = await generateSHA256(file);
+
+    const duplicate = await checkDuplicateImageHash(hash);
+
+    if (duplicate) {
+      showErrorToast(
+        "This tree proof image already exists."
+      );
+
+      return;
+    }
     setImageHash(hash);
   };
 
   const issueProof = async () => {
     if (!connected || !wallet) {
-      alert("Please connect your Cardano wallet.");
+      showErrorToast("Please connect your Cardano wallet.");
       return;
     }
 
@@ -106,12 +125,12 @@ export default function IssueProofModal({ open, onClose }: Props) {
       !form.plantationDate ||
       !form.verifierName
     ) {
-      alert("Please fill all required fields.");
+      showErrorToast("Please fill all required fields.");
       return;
     }
 
     if (!selectedImageFile || !imageHash) {
-      alert("Please upload tree proof image.");
+      showErrorToast("Please upload tree proof image.");
       return;
     }
 
@@ -144,6 +163,14 @@ export default function IssueProofModal({ open, onClose }: Props) {
 
       const realTxHash = await submitProofToBlockchain(wallet, draftRecord);
 
+      await saveProofIndex({
+        proofId,
+        imageHash,
+        txHash: realTxHash,
+        imageIpfsCid: ipfs.cid,
+        imageIpfsUrl: ipfs.url,
+      });
+
       const finalRecord: TreeProofRecord = {
         ...draftRecord,
         txHash: realTxHash,
@@ -152,10 +179,11 @@ export default function IssueProofModal({ open, onClose }: Props) {
       };
 
       setSuccessRecord(finalRecord);
+      showSuccessToast("Tree proof verified and stored successfully.")
     } catch (error) {
       console.error(error);
-      alert(
-        "Proof issuing failed. Please check wallet balance, network, collateral, Blockfrost key, and Pinata key."
+      showErrorToast(
+        "Proof issuing failed."
       );
     } finally {
       setLoading(false);
