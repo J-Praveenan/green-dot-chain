@@ -1,55 +1,70 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useWallet } from "@meshsdk/react";
 import {
   X,
   Upload,
   CheckCircle2,
-  Loader2,
+  AlertCircle,
   Download,
   ExternalLink,
 } from "lucide-react";
-import { useWallet } from "@meshsdk/react";
 
 import { CAMPAIGN } from "@/lib/constants";
 import { generateSHA256 } from "@/lib/hash";
 import {
-  submitProofToBlockchain,
   uploadFileToPinata,
+  submitProofToBlockchain,
   getCardanoScanTxUrl,
+  openTxInExplorer,
 } from "@/lib/blockchain";
-import { generateCertificatePDF } from "@/lib/certificate";
-import type { TreeProofRecord } from "@/types";
 import {
   checkDuplicateImageHash,
   saveProofIndex,
 } from "@/lib/proofRegistry";
-
+import { generateCertificatePDF } from "@/lib/certificate";
 import {
   showErrorToast,
+  showLoadingToast,
   showSuccessToast,
 } from "@/lib/toast";
+import type { TreeProofRecord } from "@/types";
 
 type Props = {
   open: boolean;
   onClose: () => void;
 };
 
-export default function IssueProofModal({ open, onClose }: Props) {
-  const { connected, wallet } = useWallet();
+const IPL_TEAMS = [
+  "CSK",
+  "MI",
+  "RCB",
+  "KKR",
+  "SRH",
+  "DC",
+  "RR",
+  "GT",
+  "LSG",
+  "PBKS",
+];
 
-  const [loading, setLoading] = useState(false);
+export default function IssueProofModal({ open, onClose }: Props) {
+  const { wallet } = useWallet();
+
   const [walletAddress, setWalletAddress] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [successRecord, setSuccessRecord] = useState<TreeProofRecord | null>(
+    null
+  );
 
   const [selectedImageFile, setSelectedImageFile] = useState<File | null>(null);
   const [imageName, setImageName] = useState("");
   const [imageHash, setImageHash] = useState("");
 
-  const [successRecord, setSuccessRecord] =
-    useState<TreeProofRecord | null>(null);
-
   const [form, setForm] = useState({
-    matchName: "",
+    teamOne: "",
+    teamTwo: "",
     overNumber: "",
     bowlerName: "",
     location: "",
@@ -57,34 +72,30 @@ export default function IssueProofModal({ open, onClose }: Props) {
     verifierName: "",
   });
 
-  useEffect(() => {
-    const loadWallet = async () => {
-      if (!connected || !wallet) {
-        setWalletAddress("");
-        return;
-      }
-
-      try {
-        const addresses = await wallet.getUsedAddresses();
-
-        if (addresses.length > 0) {
-          setWalletAddress(addresses[0]);
-        }
-      } catch (error) {
-        console.error("Failed to load wallet address", error);
-      }
-    };
-
-    loadWallet();
-  }, [connected, wallet]);
-
   if (!open) return null;
 
-  const handleChange = (field: string, value: string) => {
+  const handleChange = (name: string, value: string) => {
     setForm((prev) => ({
       ...prev,
-      [field]: value,
+      [name]: value,
     }));
+  };
+
+  const resetForm = () => {
+    setForm({
+      teamOne: "",
+      teamTwo: "",
+      overNumber: "",
+      bowlerName: "",
+      location: "",
+      plantationDate: "",
+      verifierName: "",
+    });
+
+    setSelectedImageFile(null);
+    setImageName("");
+    setImageHash("");
+    setSuccessRecord(null);
   };
 
   const handleImageUpload = async (
@@ -94,56 +105,69 @@ export default function IssueProofModal({ open, onClose }: Props) {
 
     if (!file) return;
 
-    setSelectedImageFile(file);
-    setImageName(file.name);
+    setLoading(true);
 
-    const hash = await generateSHA256(file);
+    try {
+      const hash = await generateSHA256(file);
 
-    const duplicate = await checkDuplicateImageHash(hash);
-
-    if (duplicate) {
-      showErrorToast(
-        "This tree proof image already exists."
-      );
-
-      return;
+      setSelectedImageFile(file);
+      setImageName(file.name);
+      setImageHash(hash);
+    } catch (error) {
+      console.error(error);
+      showErrorToast("Failed to generate image hash.");
+    } finally {
+      setLoading(false);
     }
-    setImageHash(hash);
   };
 
   const issueProof = async () => {
-    if (!connected || !wallet) {
-      showErrorToast("Please connect your Cardano wallet.");
-      return;
-    }
-
     if (
-      !form.matchName ||
+      !form.teamOne ||
+      !form.teamTwo ||
       !form.overNumber ||
       !form.bowlerName ||
       !form.location ||
       !form.plantationDate ||
-      !form.verifierName
+      !form.verifierName ||
+      !imageHash ||
+      !selectedImageFile
     ) {
-      showErrorToast("Please fill all required fields.");
+      showErrorToast("Please complete all required fields.");
       return;
     }
 
-    if (!selectedImageFile || !imageHash) {
-      showErrorToast("Please upload tree proof image.");
+    if (form.teamOne === form.teamTwo) {
+      showErrorToast("Please select two different IPL teams.");
       return;
     }
+
+    if (!wallet) {
+      showErrorToast("Please connect your Cardano wallet.");
+      return;
+    }
+
 
     try {
       setLoading(true);
 
+      const duplicate = await checkDuplicateImageHash(imageHash);
+
+      if (duplicate) {
+        showErrorToast(
+          "This tree proof image already exists."
+        );
+        return;
+      }
+
       const proofId = `GDC-${Date.now()}`;
+      const matchName = `${form.teamOne} vs ${form.teamTwo}`;
 
       const ipfs = await uploadFileToPinata(selectedImageFile);
 
       const draftRecord: TreeProofRecord = {
         id: proofId,
-        matchName: form.matchName,
+        matchName,
         overNumber: form.overNumber,
         bowlerName: form.bowlerName,
         treesCount: CAMPAIGN.treesPerDotBall,
@@ -163,6 +187,13 @@ export default function IssueProofModal({ open, onClose }: Props) {
 
       const realTxHash = await submitProofToBlockchain(wallet, draftRecord);
 
+      const finalRecord: TreeProofRecord = {
+        ...draftRecord,
+        txHash: realTxHash,
+        qrData: `${window.location.origin}/proof/${realTxHash}`,
+        status: "On-chain Verified",
+      };
+
       await saveProofIndex({
         proofId,
         imageHash,
@@ -171,44 +202,20 @@ export default function IssueProofModal({ open, onClose }: Props) {
         imageIpfsUrl: ipfs.url,
       });
 
-      const finalRecord: TreeProofRecord = {
-        ...draftRecord,
-        txHash: realTxHash,
-        qrData: `${window.location.origin}/proof/${realTxHash}`,
-        status: "On-chain Verified",
-      };
-
       setSuccessRecord(finalRecord);
-      showSuccessToast("Tree proof verified and stored successfully.")
+
+      showSuccessToast(
+        "Proof issued successfully on Cardano blockchain."
+      );
     } catch (error) {
       console.error(error);
+
       showErrorToast(
-        "Proof issuing failed."
+        "Failed to issue proof. Please try again."
       );
     } finally {
       setLoading(false);
     }
-  };
-
-  const resetForm = () => {
-    setForm({
-      matchName: "",
-      overNumber: "",
-      bowlerName: "",
-      location: "",
-      plantationDate: "",
-      verifierName: "",
-    });
-
-    setSelectedImageFile(null);
-    setImageName("");
-    setImageHash("");
-    setSuccessRecord(null);
-  };
-
-  const closeModal = () => {
-    resetForm();
-    onClose();
   };
 
   return (
@@ -225,20 +232,20 @@ export default function IssueProofModal({ open, onClose }: Props) {
             </div>
 
             <p className="mt-2 text-sm leading-6 text-gray-600">
-              Upload tree proof with IPL match details, IPFS storage, and
-              Cardano blockchain verification data.
+              Upload tree proof with IPL match details and blockchain
+              verification data.
             </p>
           </div>
 
           <button
-            onClick={closeModal}
+            onClick={onClose}
             className="rounded-xl p-2 text-gray-500 transition hover:bg-gray-100"
           >
             <X className="h-5 w-5" />
           </button>
         </div>
 
-        {/* Success Body */}
+        {/* Success View */}
         {successRecord ? (
           <>
             <div className="flex-1 overflow-y-auto px-6 py-6">
@@ -248,11 +255,6 @@ export default function IssueProofModal({ open, onClose }: Props) {
                 <div className="mt-4 inline-flex rounded-full bg-green-100 px-6 py-3 text-lg font-bold text-green-700">
                   Proof Issued Successfully
                 </div>
-
-                <p className="mt-4 text-sm leading-6 text-gray-600">
-                  Tree proof was uploaded to IPFS and registered on Cardano
-                  blockchain.
-                </p>
               </div>
 
               <div className="mt-6 rounded-2xl border border-green-200 bg-green-50 p-5">
@@ -266,59 +268,56 @@ export default function IssueProofModal({ open, onClose }: Props) {
                   <Info label="Over" value={successRecord.overNumber} />
                   <Info label="Bowler" value={successRecord.bowlerName} />
                   <Info label="Location" value={successRecord.location} />
-                  <Info
-                    label="Trees"
-                    value={String(successRecord.treesCount)}
-                  />
+                  <Info label="Image" value={successRecord.imageName} />
                 </div>
 
-                <div className="mt-5">
-                  <p className="text-sm font-bold text-green-700">
-                    Image SHA256 Hash
-                  </p>
-                  <p className="mt-2 break-all rounded-xl bg-white p-3 font-mono text-xs text-green-900">
-                    {successRecord.imageHash}
-                  </p>
-                </div>
+                <HashBlock
+                  label="Image Hash"
+                  value={successRecord.imageHash}
+                />
 
-                <div className="mt-5">
-                  <p className="text-sm font-bold text-green-700">
-                    IPFS CID
-                  </p>
-                  <p className="mt-2 break-all rounded-xl bg-white p-3 font-mono text-xs text-green-900">
-                    {successRecord.imageIpfsCid}
-                  </p>
-                </div>
+                <HashBlock
+                  label="Transaction Hash"
+                  value={successRecord.txHash}
+                />
 
-                <div className="mt-5">
-                  <p className="text-sm font-bold text-green-700">
-                    Transaction Hash
-                  </p>
-                  <p className="mt-2 break-all rounded-xl bg-white p-3 font-mono text-xs text-green-900">
-                    {successRecord.txHash}
-                  </p>
+                <HashBlock
+                  label="IPFS CID"
+                  value={successRecord.imageIpfsCid}
+                />
+              </div>
+
+              <div className="mt-5 rounded-2xl border border-blue-200 bg-blue-50 p-5">
+                <div className="flex gap-3">
+                  <AlertCircle className="mt-1 h-5 w-5 text-blue-700" />
+                  <div>
+                    <h4 className="font-bold text-blue-900">
+                      Important Verification Notice
+                    </h4>
+                    <ul className="mt-3 list-disc space-y-2 pl-5 text-sm leading-6 text-blue-800">
+                      <li>Save the certificate PDF for future verification.</li>
+                      <li>The QR code opens the public proof page.</li>
+                      <li>
+                        The image hash and IPFS CID are stored with Cardano
+                        metadata.
+                      </li>
+                    </ul>
+                  </div>
                 </div>
               </div>
             </div>
 
-            {/* Success Footer */}
-            <div className="shrink-0 flex flex-wrap justify-end gap-3 border-t border-gray-100 bg-white px-6 py-4">
+            <div className="shrink-0 flex flex-wrap justify-end gap-3 border-t border-gray-100 bg-white px-6 py-5">
               <button
                 onClick={() => generateCertificatePDF(successRecord)}
-                className="inline-flex items-center gap-2 rounded-xl bg-green-700 px-5 py-3 font-semibold text-white transition hover:bg-green-800"
+                className="inline-flex items-center gap-2 rounded-xl bg-blue-700 px-5 py-3 font-semibold text-white transition hover:bg-blue-800"
               >
                 <Download className="h-4 w-4" />
                 Download Certificate
               </button>
 
               <button
-                onClick={() =>
-                  window.open(
-                    getCardanoScanTxUrl(successRecord.txHash),
-                    "_blank",
-                    "noopener,noreferrer"
-                  )
-                }
+                onClick={() => openTxInExplorer(successRecord.txHash)}
                 className="inline-flex items-center gap-2 rounded-xl border border-green-200 bg-white px-5 py-3 font-semibold text-green-700 transition hover:bg-green-50"
               >
                 <ExternalLink className="h-4 w-4" />
@@ -326,7 +325,14 @@ export default function IssueProofModal({ open, onClose }: Props) {
               </button>
 
               <button
-                onClick={closeModal}
+                onClick={resetForm}
+                className="rounded-xl bg-green-700 px-5 py-3 font-semibold text-white transition hover:bg-green-800"
+              >
+                Upload Another
+              </button>
+
+              <button
+                onClick={onClose}
                 className="rounded-xl border border-gray-200 px-5 py-3 font-semibold text-gray-700 transition hover:bg-gray-50"
               >
                 Close
@@ -335,56 +341,97 @@ export default function IssueProofModal({ open, onClose }: Props) {
           </>
         ) : (
           <>
-            {/* Form Body */}
+            {/* Form */}
             <div className="flex-1 overflow-y-auto px-6 py-5">
               <div className="grid gap-5">
-                <FormInput
-                  label="Match Name *"
-                  value={form.matchName}
-                  placeholder="e.g. CSK vs MI"
-                  onChange={(value) => handleChange("matchName", value)}
-                />
+                {/* Match Dropdown */}
+                <div>
+                  <label className="mb-2 block text-sm font-bold text-gray-800">
+                    IPL Match *
+                  </label>
 
-                <FormInput
+                  <div className="grid gap-3 sm:grid-cols-[1fr_auto_1fr] sm:items-center">
+                    <select
+                      value={form.teamOne}
+                      onChange={(e) =>
+                        handleChange("teamOne", e.target.value)
+                      }
+                      className="w-full rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm outline-none focus:border-green-500 focus:ring-4 focus:ring-green-100"
+                    >
+                      <option value="">Select Team</option>
+                      {IPL_TEAMS.map((team) => (
+                        <option key={team} value={team}>
+                          {team}
+                        </option>
+                      ))}
+                    </select>
+
+                    <span className="text-center text-sm font-black text-green-700">
+                      VS
+                    </span>
+
+                    <select
+                      value={form.teamTwo}
+                      onChange={(e) =>
+                        handleChange("teamTwo", e.target.value)
+                      }
+                      className="w-full rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm outline-none focus:border-green-500 focus:ring-4 focus:ring-green-100"
+                    >
+                      <option value="">Select Team</option>
+                      {IPL_TEAMS.filter(
+                        (team) => team !== form.teamOne
+                      ).map((team) => (
+                        <option key={team} value={team}>
+                          {team}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  {form.teamOne && form.teamTwo && (
+                    <div className="mt-3 rounded-xl border border-green-100 bg-green-50 px-4 py-3">
+                      <p className="text-sm font-semibold text-green-700">
+                        Selected Match
+                      </p>
+                      <h3 className="mt-1 text-lg font-black text-gray-950">
+                        {form.teamOne} vs {form.teamTwo}
+                      </h3>
+                    </div>
+                  )}
+                </div>
+
+                <Input
                   label="Dot Ball Over *"
                   value={form.overNumber}
-                  placeholder="e.g. 12.4"
+                  placeholder="Example: 12.4"
                   onChange={(value) => handleChange("overNumber", value)}
                 />
 
-                <FormInput
+                <Input
                   label="Bowler Name *"
                   value={form.bowlerName}
-                  placeholder="Enter bowler name"
+                  placeholder="Example: Pathirana"
                   onChange={(value) => handleChange("bowlerName", value)}
                 />
 
-                <FormInput
+                <Input
                   label="Plantation Location *"
                   value={form.location}
-                  placeholder="Enter plantation location"
+                  placeholder="Example: Mumbai"
                   onChange={(value) => handleChange("location", value)}
                 />
 
-                <div>
-                  <label className="mb-2 block text-sm font-bold text-gray-800">
-                    Plantation Date *
-                  </label>
+                <Input
+                  type="date"
+                  label="Plantation Date *"
+                  value={form.plantationDate}
+                  onChange={(value) => handleChange("plantationDate", value)}
+                />
 
-                  <input
-                    type="date"
-                    value={form.plantationDate}
-                    onChange={(e) =>
-                      handleChange("plantationDate", e.target.value)
-                    }
-                    className="w-full rounded-xl border border-gray-200 px-4 py-3 text-sm outline-none focus:border-green-500 focus:ring-4 focus:ring-green-100"
-                  />
-                </div>
-
-                <FormInput
+                <Input
                   label="Verifier / NGO Name *"
                   value={form.verifierName}
-                  placeholder="Enter verifier or NGO name"
+                  placeholder="Example: Green Earth Foundation"
                   onChange={(value) => handleChange("verifierName", value)}
                 />
 
@@ -393,15 +440,15 @@ export default function IssueProofModal({ open, onClose }: Props) {
                     Upload Tree Image *
                   </label>
 
-                  <label className="flex cursor-pointer flex-col items-center justify-center rounded-xl border-2 border-dashed border-green-200 bg-green-50 p-6 text-center transition hover:bg-green-100">
-                    <Upload className="h-10 w-10 text-green-700" />
+                  <label className="flex cursor-pointer flex-col items-center justify-center rounded-xl border-2 border-dashed border-green-200 bg-green-50 p-8 text-center transition hover:bg-green-100">
+                    <Upload className="h-12 w-12 text-green-700" />
 
                     <p className="mt-3 font-semibold text-gray-900">
-                      Click to upload image
+                      Click to upload or drag and drop
                     </p>
 
                     <p className="mt-1 text-sm text-gray-500">
-                      Image will be hashed and uploaded to IPFS.
+                      JPG, PNG, WEBP up to 10MB
                     </p>
 
                     <input
@@ -413,7 +460,7 @@ export default function IssueProofModal({ open, onClose }: Props) {
                   </label>
                 </div>
 
-                {imageName && (
+                {imageHash && (
                   <div className="rounded-xl border border-green-200 bg-green-50 p-4">
                     <p className="font-bold text-green-800">
                       Image Hash Generated
@@ -428,26 +475,13 @@ export default function IssueProofModal({ open, onClose }: Props) {
                     </p>
                   </div>
                 )}
-
-                <div className="rounded-2xl border border-blue-200 bg-blue-50 p-5">
-                  <h4 className="font-bold text-blue-900">
-                    Blockchain Process
-                  </h4>
-
-                  <ul className="mt-3 list-disc space-y-2 pl-5 text-sm leading-6 text-blue-800">
-                    <li>Generates SHA256 hash from uploaded image</li>
-                    <li>Uploads tree image to IPFS through Pinata</li>
-                    <li>Stores proof metadata on Cardano transaction</li>
-                    <li>Generates certificate and QR verification URL</li>
-                  </ul>
-                </div>
               </div>
             </div>
 
-            {/* Form Footer */}
-            <div className="shrink-0 flex justify-end gap-3 border-t border-gray-100 bg-white px-6 py-4">
+            {/* Footer */}
+            <div className="shrink-0 flex justify-end gap-3 border-t border-gray-100 bg-white px-6 py-5">
               <button
-                onClick={closeModal}
+                onClick={onClose}
                 className="rounded-xl border border-gray-200 px-5 py-3 font-semibold text-gray-700 transition hover:bg-gray-50"
               >
                 Cancel
@@ -456,10 +490,9 @@ export default function IssueProofModal({ open, onClose }: Props) {
               <button
                 onClick={issueProof}
                 disabled={loading}
-                className="inline-flex items-center gap-2 rounded-xl bg-green-700 px-6 py-3 font-semibold text-white transition hover:bg-green-800 disabled:cursor-not-allowed disabled:opacity-60"
+                className="rounded-xl bg-green-700 px-6 py-3 font-semibold text-white transition hover:bg-green-800 disabled:cursor-not-allowed disabled:opacity-60"
               >
-                {loading && <Loader2 className="h-4 w-4 animate-spin" />}
-                {loading ? "Submitting to Cardano..." : "Upload & Issue"}
+                {loading ? "Processing..." : "Upload & Issue"}
               </button>
             </div>
           </>
@@ -469,16 +502,18 @@ export default function IssueProofModal({ open, onClose }: Props) {
   );
 }
 
-function FormInput({
+function Input({
   label,
   value,
-  placeholder,
   onChange,
+  placeholder,
+  type = "text",
 }: {
   label: string;
   value: string;
-  placeholder: string;
   onChange: (value: string) => void;
+  placeholder?: string;
+  type?: string;
 }) {
   return (
     <div>
@@ -487,9 +522,10 @@ function FormInput({
       </label>
 
       <input
+        type={type}
         value={value}
-        onChange={(e) => onChange(e.target.value)}
         placeholder={placeholder}
+        onChange={(e) => onChange(e.target.value)}
         className="w-full rounded-xl border border-gray-200 px-4 py-3 text-sm outline-none focus:border-green-500 focus:ring-4 focus:ring-green-100"
       />
     </div>
@@ -499,8 +535,19 @@ function FormInput({
 function Info({ label, value }: { label: string; value: string }) {
   return (
     <div>
-      <p className="text-sm font-bold text-green-700">{label}</p>
-      <p className="mt-1 break-all text-sm text-green-900">{value}</p>
+      <p className="text-sm font-bold text-green-700">{label}:</p>
+      <p className="break-all text-sm text-green-900">{value}</p>
+    </div>
+  );
+}
+
+function HashBlock({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="mt-5">
+      <p className="text-sm font-bold text-green-700">{label}:</p>
+      <p className="mt-1 break-all text-xs leading-6 text-green-900">
+        {value}
+      </p>
     </div>
   );
 }
