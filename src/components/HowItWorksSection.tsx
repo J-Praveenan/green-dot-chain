@@ -12,28 +12,28 @@ import {
 const steps = [
   {
     icon: UploadCloud,
-    title: "Upload Tree Proof",
+    title: "Upload Tree Plantation Proof",
     text: "User uploads a planted tree image with IPL match and plantation details.",
   },
   {
     icon: Fingerprint,
-    title: "Generate SHA256 Hash",
+    title: "Generate Secure SHA256 Hash",
     text: "The browser generates a unique image hash for tamper-proof verification.",
   },
   {
     icon: Database,
-    title: "Store on Cardano + IPFS",
-    text: "Image is uploaded to IPFS and proof metadata is stored on Cardano blockchain.",
+    title: "Store Data on Cardano & IPFS",
+    text: "The image is uploaded to IPFS while proof metadata is permanently stored on the Cardano blockchain.",
   },
   {
     icon: QrCode,
-    title: "Generate Certificate QR",
-    text: "A PDF certificate is created with transaction hash, image hash, and QR link.",
+    title: "Generate Verification Certificate",
+    text: "A blockchain certificate with QR code, transaction hash, and proof details is automatically generated.",
   },
   {
     icon: ShieldCheck,
-    title: "Verify Publicly",
-    text: "Anyone can scan the QR and view the verified proof page with blockchain data.",
+    title: "Public Blockchain Verification",
+    text: "Anyone can scan the QR code and verify the proof using blockchain transaction and IPFS data.",
   },
 ];
 
@@ -48,12 +48,13 @@ export default function HowItWorksSection() {
             </span>
 
             <h2 className="mt-5 text-4xl font-black text-gray-950 md:text-5xl">
-              From tree image to blockchain proof
+              From Tree Plantation Image to Verified Blockchain Proof
             </h2>
 
             <p className="mt-5 text-lg leading-8 text-gray-600">
-              The platform follows a clear verification workflow where each
-              image becomes a permanent sustainability proof on Cardano.
+              GreenDot Chain follows a transparent blockchain verification
+              workflow where each sustainability image becomes a trusted,
+              permanent, and publicly verifiable proof record.
             </p>
 
             <div className="relative mt-10 flex items-center justify-center overflow-hidden rounded-[2rem] bg-white p-6 shadow-sm">

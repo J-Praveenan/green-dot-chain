@@ -12,28 +12,29 @@ export default function IssueProofSection() {
       <div className="mx-auto max-w-6xl px-6">
         <div className="rounded-[2rem] border border-gray-200 bg-white p-8 shadow-sm">
           <span className="inline-flex rounded-full bg-green-50 px-4 py-2 text-sm font-semibold text-green-700 ring-1 ring-green-200">
-            Issue Tree Proof
+            Issue Proof
           </span>
 
           <div className="mt-6 grid gap-10 lg:grid-cols-[1fr_0.8fr] lg:items-center">
             <div>
               <h2 className="text-4xl font-black leading-tight text-gray-950 md:text-5xl">
-                Create a Verified Tree Plantation Proof
+                Create a Blockchain-Verified Tree Plantation Proof
               </h2>
 
               <p className="mt-5 max-w-3xl text-lg leading-8 text-gray-600">
-                Admin can add IPL match details, upload planted tree image
-                proof, generate the image hash, and create a verification
-                record for future Cardano blockchain proof.
+                Add IPL match details, upload the tree plantation image, and
+                record the proof on Cardano with IPFS storage, SHA256 hashing,
+                and QR-based public verification.
               </p>
 
               {!connected && (
                 <div className="mt-8 rounded-3xl border border-yellow-200 bg-yellow-50 p-6">
                   <h3 className="text-xl font-bold text-yellow-800">
-                    Wallet Required
+                    Wallet Connection Required
                   </h3>
                   <p className="mt-2 text-yellow-700">
-                    Please connect your Cardano wallet to issue proof records.
+                    Please connect your Cardano wallet to issue a blockchain
+                    proof record.
                   </p>
                 </div>
               )}
@@ -44,7 +45,7 @@ export default function IssueProofSection() {
                   className="mt-8 inline-flex items-center gap-3 rounded-2xl bg-green-700 px-7 py-4 font-semibold text-white shadow-lg transition hover:bg-green-800"
                 >
                   <PlusCircle className="h-5 w-5" />
-                  Open Issue Proof Form
+                   Open Proof Issue Form
                 </button>
               )}
             </div>
@@ -55,35 +56,35 @@ export default function IssueProofSection() {
               </div>
 
               <h3 className="mt-6 text-2xl font-black text-gray-950">
-                Verification Output
+                What This Generates
               </h3>
 
               <div className="mt-6 space-y-4">
                 <div className="flex items-start gap-3">
                   <FileCheck className="mt-1 h-5 w-5 text-green-700" />
                   <p className="text-gray-700">
-                    SHA256 hash of uploaded planted tree image
+                    SHA256 hash of the uploaded tree plantation image
                   </p>
                 </div>
 
                 <div className="flex items-start gap-3">
                   <FileCheck className="mt-1 h-5 w-5 text-green-700" />
                   <p className="text-gray-700">
-                    IPL match and plantation metadata record
+                    IPFS link for decentralized image access
                   </p>
                 </div>
 
                 <div className="flex items-start gap-3">
                   <FileCheck className="mt-1 h-5 w-5 text-green-700" />
                   <p className="text-gray-700">
-                    Simulated Cardano transaction hash for current phase
+                    Cardano transaction hash with proof metadata
                   </p>
                 </div>
 
                 <div className="flex items-start gap-3">
                   <FileCheck className="mt-1 h-5 w-5 text-green-700" />
                   <p className="text-gray-700">
-                    Registry record for public image verification
+                    Downloadable certificate with QR verification link
                   </p>
                 </div>
               </div>

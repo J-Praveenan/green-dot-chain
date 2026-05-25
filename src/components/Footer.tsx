@@ -19,14 +19,16 @@ export default function Footer() {
             <div>
               <h2 className="text-xl font-bold">{APP_NAME}</h2>
               <p className="text-sm text-green-100">
-                Cardano Sustainability Proof Verification
+                Blockchain Sustainability Verification Platform
               </p>
             </div>
           </div>
 
           <p className="mt-5 max-w-md text-sm leading-6 text-green-100">
-            A blockchain-powered platform for issuing and verifying IPL
-            sustainability proof records using SHA256 hashing and Cardano.
+            GreenDot Chain is a blockchain-powered platform designed to
+            issue and verify IPL sustainability proof records using
+            Cardano blockchain technology, IPFS decentralized storage,
+            and SHA256 cryptographic verification.
           </p>
         </div>
 
@@ -34,10 +36,10 @@ export default function Footer() {
           <h3 className="mb-4 font-semibold text-green-200">Platform</h3>
 
           <ul className="space-y-2 text-sm text-green-100">
-            <li>Issue Proof</li>
-            <li>Proof Registry</li>
-            <li>Verify Proof</li>
-            <li>Cardano Integration</li>
+            <li>Issue Sustainability Proofs</li>
+            <li>Blockchain Proof Registry</li>
+            <li>Public Proof Verification</li>
+            <li>Public Proof Verification</li>
           </ul>
         </div>
 
@@ -47,24 +49,24 @@ export default function Footer() {
           <div className="space-y-3 text-sm text-green-100">
             <div className="flex items-center gap-2">
               <FileCheck className="h-4 w-4" />
-              SHA256 Hashing
+              SHA256 Image Verification
             </div>
 
             <div className="flex items-center gap-2">
               <ShieldCheck className="h-4 w-4" />
-              Blockchain Proof
+              Immutable Blockchain Records
             </div>
 
             <div className="flex items-center gap-2">
               <Leaf className="h-4 w-4" />
-              Green Campaign Proof
+              IPL Green Campaign Support
             </div>
           </div>
         </div>
       </div>
 
       <div className="border-t border-green-700 px-6 py-5 text-center text-sm text-green-100">
-        © 2026 GreenDot Chain. Built for IPL sustainability verification.
+        © 2026 GreenDot Chain. Powered by Cardano blockchain technology for trusted sustainability verification.
       </div>
     </footer>
   );

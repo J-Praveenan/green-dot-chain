@@ -51,7 +51,7 @@ export default function VerifyProofModal({ open, onClose }: Props) {
 
   const verifyProof = async () => {
     if (!txHash || !uploadedHash) {
-      showErrorToast("Please enter transaction hash and upload the image.");
+      showErrorToast("Please enter the transaction hash and upload the proof image.");
       return;
     }
 
@@ -60,7 +60,7 @@ export default function VerifyProofModal({ open, onClose }: Props) {
       const verifyResult = await verifyProofOnBlockchain(txHash, uploadedHash);
       setResult(verifyResult);
       {
-        verifyResult.valid ? showSuccessToast("Verification success.") : showErrorToast("Verification failed.");
+        verifyResult.valid ? showSuccessToast("Proof verified successfully on Cardano.") : showErrorToast("Proof verification failed.");
       }
       
     } catch (error) {
@@ -91,7 +91,7 @@ export default function VerifyProofModal({ open, onClose }: Props) {
             <div className="flex items-center gap-2">
               <Search className="h-5 w-5 text-green-700" />
               <h2 className="text-xl font-bold text-gray-950">
-                Verify Tree Proof
+                Verify Tree Plantation Proof
               </h2>
             </div>
 
@@ -128,18 +128,18 @@ export default function VerifyProofModal({ open, onClose }: Props) {
 
               <div>
                 <label className="mb-2 block text-sm font-bold text-gray-800">
-                  Upload Tree Image *
+                  Upload Original Tree Image *
                 </label>
 
                 <label className="flex cursor-pointer flex-col items-center justify-center rounded-xl border-2 border-dashed border-green-200 bg-green-50 p-4 text-center transition hover:bg-green-100">
                   <Upload className="h-6 w-6 text-green-700" />
 
                   <p className="mt-3 font-semibold text-gray-900">
-                    Click to upload image
+                    Click to upload the original proof image
                   </p>
 
                   <p className="mt-1 text-sm text-gray-500">
-                    The image SHA256 hash will be compared with blockchain data.
+                    The image hash will be compared with the hash stored on Cardano.
                   </p>
 
                   <input
@@ -154,7 +154,7 @@ export default function VerifyProofModal({ open, onClose }: Props) {
               {fileName && (
                 <div className="rounded-xl border border-green-200 bg-green-50 p-4">
                   <p className="font-bold text-green-800">
-                    Image Hash Generated
+                    Image Hash Generated Successfully
                   </p>
 
                   <p className="mt-2 text-sm text-green-700">
@@ -179,13 +179,13 @@ export default function VerifyProofModal({ open, onClose }: Props) {
                 </div>
 
                 <p className="mt-4 text-sm leading-6 text-gray-600">
-                  The uploaded image matches the hash stored on Cardano.
+                  The uploaded image matches the proof hash stored in Cardano blockchain metadata.
                 </p>
               </div>
 
               <div className="mt-6 rounded-2xl border border-green-200 bg-green-50 p-5">
                 <h3 className="mb-4 text-lg font-bold text-green-900">
-                  Blockchain Metadata
+                  Verified Blockchain Details
                 </h3>
 
                 <div className="grid gap-4 sm:grid-cols-2">
@@ -254,7 +254,7 @@ export default function VerifyProofModal({ open, onClose }: Props) {
                 <XCircle className="mx-auto h-16 w-16 text-red-600" />
 
                 <div className="mt-4 inline-flex rounded-full bg-red-100 px-6 py-3 text-lg font-bold text-red-700">
-                  Invalid Proof
+                  Invalid or Unmatched Proof
                 </div>
 
                 <p className="mt-4 text-sm leading-6 text-red-700">
@@ -321,7 +321,7 @@ export default function VerifyProofModal({ open, onClose }: Props) {
                 className="inline-flex items-center gap-2 rounded-xl bg-green-700 px-6 py-3 font-semibold text-white transition hover:bg-green-800 disabled:cursor-not-allowed disabled:opacity-60"
               >
                 {loading && <Loader2 className="h-4 w-4 animate-spin" />}
-                {loading ? "Verifying..." : "Verify Proof"}
+                {loading ? "Verifying Proof..." : "Verify Proof"}
               </button>
             </>
           )}

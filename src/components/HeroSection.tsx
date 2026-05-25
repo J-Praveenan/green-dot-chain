@@ -34,14 +34,14 @@ export default function HeroSection({ scrollToSection }: HeroSectionProps) {
               onClick={() => scrollToSection("issue")}
               className="rounded-2xl bg-green-700 px-7 py-4 text-sm font-semibold text-white transition hover:bg-green-800"
             >
-              Issue Proof
+              Issue Tree Proof
             </button>
 
             <button
               onClick={() => scrollToSection("verify")}
               className="rounded-2xl border border-green-200 bg-white px-7 py-4 text-sm font-semibold text-green-700 transition hover:bg-green-50"
             >
-              Verify Proof
+              Verify Existing Proof
             </button>
           </div>
 
