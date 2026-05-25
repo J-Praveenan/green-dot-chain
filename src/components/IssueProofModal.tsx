@@ -237,12 +237,25 @@ export default function IssueProofModal({ open, onClose }: Props) {
       showSuccessToast(
         "Tree plantation proof successfully recorded on Cardano."
       );
-    } catch (error) {
+    } catch (error: any) {
       console.error(error);
 
-      showErrorToast(
-        "Unable to issue proof. Please check your wallet, network, and try again."
-      );
+      const errorMessage =
+        error?.info ||
+        error?.message ||
+        "Failed to issue proof.";
+
+      // Wallet locked
+      if (
+        errorMessage.toLowerCase().includes("wallet is locked")
+      ) {
+        showErrorToast(
+          "Your Cardano wallet is locked. Please unlock it and try again."
+        );
+
+        return;
+      }
+
     } finally {
       setLoading(false);
     }
