@@ -121,6 +121,22 @@ export default function IssueProofModal({ open, onClose }: Props) {
     }
   };
 
+  const isValidT20Over = (value: string) => {
+    const overRegex = /^(?:[0-9]|1[0-9])\.[1-6]$|^20\.0$/;
+
+    return overRegex.test(value);
+  };
+
+  const isFutureDate = (dateValue: string) => {
+    const selectedDate = new Date(dateValue);
+    const today = new Date();
+
+    selectedDate.setHours(0, 0, 0, 0);
+    today.setHours(0, 0, 0, 0);
+
+    return selectedDate > today;
+  };
+
   const issueProof = async () => {
     if (
       !form.teamOne ||
@@ -133,7 +149,7 @@ export default function IssueProofModal({ open, onClose }: Props) {
       !imageHash ||
       !selectedImageFile
     ) {
-      showErrorToast("Please complete all required fields.");
+      showErrorToast("Please fill all required proof details before submitting.");
       return;
     }
 
@@ -143,7 +159,21 @@ export default function IssueProofModal({ open, onClose }: Props) {
     }
 
     if (!wallet) {
-      showErrorToast("Please connect your Cardano wallet.");
+      showErrorToast("Please connect your Cardano wallet to issue a proof.");
+      return;
+    }
+
+    if (!isValidT20Over(form.overNumber)) {
+      showErrorToast(
+        "Please enter a valid T20 over between 0.1 and 20.0."
+      );
+      return;
+    }
+
+    if (isFutureDate(form.plantationDate)) {
+      showErrorToast(
+        "Plantation date cannot be a future date."
+      );
       return;
     }
 
@@ -155,7 +185,7 @@ export default function IssueProofModal({ open, onClose }: Props) {
 
       if (duplicate) {
         showErrorToast(
-          "This tree proof image already exists."
+          "This tree proof image has already been registered."
         );
         return;
       }
@@ -205,14 +235,27 @@ export default function IssueProofModal({ open, onClose }: Props) {
       setSuccessRecord(finalRecord);
 
       showSuccessToast(
-        "Proof issued successfully on Cardano blockchain."
+        "Tree plantation proof successfully recorded on Cardano."
       );
-    } catch (error) {
+    } catch (error: any) {
       console.error(error);
 
-      showErrorToast(
-        "Failed to issue proof. Please try again."
-      );
+      const errorMessage =
+        error?.info ||
+        error?.message ||
+        "Failed to issue proof.";
+
+      // Wallet locked
+      if (
+        errorMessage.toLowerCase().includes("wallet is locked")
+      ) {
+        showErrorToast(
+          "Your Cardano wallet is locked. Please unlock it and try again."
+        );
+
+        return;
+      }
+
     } finally {
       setLoading(false);
     }
@@ -227,13 +270,12 @@ export default function IssueProofModal({ open, onClose }: Props) {
             <div className="flex items-center gap-2">
               <Upload className="h-5 w-5 text-green-700" />
               <h2 className="text-xl font-bold text-gray-950">
-                Issue Tree Proof
+                Issue Tree Plantation Proof
               </h2>
             </div>
 
             <p className="mt-2 text-sm leading-6 text-gray-600">
-              Upload tree proof with IPL match details and blockchain
-              verification data.
+              Add IPL match details, upload the tree plantation proof image, and record the proof on Cardano blockchain.
             </p>
           </div>
 
@@ -403,7 +445,7 @@ export default function IssueProofModal({ open, onClose }: Props) {
                 <Input
                   label="Dot Ball Over *"
                   value={form.overNumber}
-                  placeholder="Example: 12.4"
+                  placeholder="Example: 0.1, 12.4, 19.6, 20.0"
                   onChange={(value) => handleChange("overNumber", value)}
                 />
 
@@ -425,6 +467,7 @@ export default function IssueProofModal({ open, onClose }: Props) {
                   type="date"
                   label="Plantation Date *"
                   value={form.plantationDate}
+                  max={new Date().toISOString().split("T")[0]}
                   onChange={(value) => handleChange("plantationDate", value)}
                 />
 
@@ -508,12 +551,15 @@ function Input({
   onChange,
   placeholder,
   type = "text",
+  max,
 }: {
   label: string;
   value: string;
   onChange: (value: string) => void;
   placeholder?: string;
   type?: string;
+    max?: string;
+
 }) {
   return (
     <div>

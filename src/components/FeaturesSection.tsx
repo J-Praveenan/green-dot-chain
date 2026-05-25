@@ -10,33 +10,33 @@ import {
 const features = [
   {
     icon: ImageUp,
-    title: "IPFS Image Storage",
-    text: "Tree proof images are uploaded to IPFS using Pinata for decentralized access.",
+    title: "Decentralized Image Storage",
+    text: "Tree plantation proof images are securely stored on IPFS using Pinata for permanent decentralized access.",
   },
   {
     icon: Fingerprint,
-    title: "SHA256 Image Hashing",
-    text: "Each uploaded image receives a unique cryptographic hash for tamper detection.",
+    title: "Secure SHA256 Verification",
+    text: "Each uploaded image receives a unique SHA256 hash to ensure authenticity and detect tampering.",
   },
   {
     icon: ShieldCheck,
-    title: "Cardano Proof Storage",
-    text: "Proof metadata is stored on Cardano as immutable transaction metadata.",
+    title: "Cardano Blockchain Storage",
+    text: "Proof metadata is permanently recorded on the Cardano blockchain for transparent verification.",
   },
   {
     icon: FileText,
-    title: "Certificate Generation",
-    text: "A professional PDF certificate is generated with proof details and hashes.",
+    title: "Blockchain Certificate Generation",
+    text: "Generate professional blockchain certificates containing proof details, hashes, and verification data.",
   },
   {
     icon: QrCode,
-    title: "QR Proof Access",
-    text: "QR codes open a public proof page with blockchain and IPFS verification details.",
+    title: "QR-Based Verification",
+    text: "QR codes provide instant access to public proof verification and blockchain transaction details.",
   },
   {
     icon: Globe2,
-    title: "Public Verification",
-    text: "Anyone can verify proof authenticity using the transaction hash and image proof.",
+    title: "Public Proof Verification",
+    text: "Anyone can verify the authenticity of sustainability proofs using blockchain transaction data.",
   },
 ];
 
@@ -55,7 +55,8 @@ export default function FeaturesSection() {
 
           <p className="mt-4 text-lg leading-8 text-gray-600">
             GreenDot Chain combines IPFS, Cardano metadata, QR certificates,
-            and cryptographic hashing to verify sustainability proof records.
+            and cryptographic hashing and QR verification to create trusted and
+            transparent sustainability proof records.
           </p>
         </div>
 
